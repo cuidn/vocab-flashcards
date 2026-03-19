@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocab Flashcards</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 1.5rem; }
+        .stats { font-size: 0.9rem; color: #888; }
+        
+        /* Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tab.active { background: #4f46e5; }
+        
+        /* Flashcard */
+        .card-container { perspective: 1000px; margin: 40px 0; }
+        .card {
+            width: 100%;
+            min-height: 280px;
+            background: #fff;
+            color: #1a1a2e;
+            border-radius: 16px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .card.flipped { transform: rotateY(180deg); }
+        .card-front, .card-back {
+            backface-visibility: hidden;
+            position: absolute;
+            width: 100%;
+            padding: 30px;
+        }
+        .card-back { transform: rotateY(180deg); }
+        
+        .language-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .word-main { font-size: 2.5rem; font-weight: 700; margin-bottom: 8px; }
+        .word-pinyin { font-size: 1rem; color: #888; font-style: italic; }
+        
+        .click-hint {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+        
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-wrong { background: #ef4444; color: #fff; }
+        .btn-right { background: #22c55e; color: #fff; }
+        .btn:hover { transform: scale(1.05); }
+        
+        /* Add Word Form */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.9rem; color: #aaa; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 1rem;
+        }
+        input:focus { outline: none; border-color: #4f46e5; }
+        
+        /* Word List */
+        .word-list { margin-top: 20px; }
+        .word-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .word-info { display: flex; gap: 15px; flex-wrap: wrap; }
+        .word-pair { display: flex; flex-direction: column; }
+        .word-pair .es { font-weight: 600; }
+        .word-pair .zh { font-size: 0.9rem; color: #aaa; }
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        
+        /* Import Section */
+        .import-section {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+        
+        .hidden { display: none; }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎴 Vocab Cards</h1>
+            <span class="stats" id="wordCount">0 words</span>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" data-tab="practice">Practice</button>
+            <button class="tab" data-tab="list">Word List</button>
+            <button class="tab" data-tab="add">Add Words</button>
+            <button class="tab" data-tab="import">Import</button>
+        </div>
+        
+        <!-- Practice Tab -->
+        <div id="practice" class="tab-content">
+            <div class="card-container" id="cardContainer">
+                <div class="empty-state" id="emptyState">
+                    <p>No words yet!</p>
+                    <p>Add some words first.</p>
+                </div>
+                <div class="card hidden" id="flashcard" onclick="flipCard()">
+                    <div class="card-front">
+                        <div class="language-label" id="frontLang">Spanish</div>
+                        <div class="word-main" id="frontWord">-</div>
+                        <div class="word-pinyin" id="frontPinyin"></div>
+                        <div class="click-hint">Click to flip</div>
+                    </div>
+                    <div class="card-back">
+                        <div class="language-label" id="backLang">English</div>
+                        <div class="word-main" id="backWord">-</div>
+                        <div class="word-pinyin" id="backPinyin"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="btn-group hidden" id="btnGroup">
+                <button class="btn btn-wrong" onclick="markWrong()">✗ Wrong</button>
+                <button class="btn btn-right" onclick="markRight()">✓ Right</button>
+            </div>
+        </div>
+        
+        <!-- Word List Tab -->
+        <div id="list" class="tab-content hidden">
+            <div class="word-list" id="wordList"></div>
+        </div>
+        
+        <!-- Add Word Tab -->
+        <div id="add" class="tab-content hidden">
+            <div class="form-group">
+                <label>Spanish</label>
+                <input type="text" id="newSpanish" placeholder="Mantenimiento">
+            </div>
+            <div class="form-group">
+                <label>Chinese</label>
+                <input type="text" id="newChinese" placeholder="维护">
+            </div>
+            <div class="form-group">
+                <label>Pinyin</label>
+                <input type="text" id="newPinyin" placeholder="Wéi hù">
+            </div>
+            <div class="form-group">
+                <label>English</label>
+                <input type="text" id="newEnglish" placeholder="maintenance">
+            </div>
+            <button class="btn" style="background: #4f46e5; width: 100%;" onclick="addWord()">Add Word</button>
+        </div>
+        
+        <!-- Import Tab -->
+        <div id="import" class="tab-content hidden">
+            <div class="import-section">
+                <p style="margin-bottom: 10px; color: #aaa;">Paste CSV/TSV data (no header):</p>
+                <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Format: spanish, chinese, pinyin, english</p>
+                <textarea id="importData" placeholder="Mantenimiento, 维护, Wéi hù, maintenance&#10;Hola, 你好, nǐ hǎo, hello"></textarea>
+                <button class="btn" style="background: #4f46e5; width: 100%;" onclick="importWords()">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let words = [];
+        let currentWord = null;
+        let practiceDirection = 'es-en'; // es-en, en-es, zh-en, en-zh
+        
+        // Load words on start
+        async function loadWords() {
+            const res = await fetch('/api/words');
+            const data = await res.json();
+            words = data.words;
+            document.getElementById('wordCount').textContent = `${words.length} words`;
+            renderWordList();
+            if (words.length > 0) nextCard();
+        }
+        
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.remove('hidden');
+            });
+        });
+        
+        // Flashcard logic
+        function flipCard() {
+            document.getElementById('flashcard').classList.toggle('flipped');
+        }
+        
+        function nextCard() {
+            if (words.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                document.getElementById('flashcard').classList.add('hidden');
+                document.getElementById('btnGroup').classList.add('hidden');
+                return;
+            }
+            
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('flashcard').classList.remove('hidden');
+            document.getElementById('btnGroup').classList.remove('hidden');
+            
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            document.getElementById('flashcard').classList.remove('flipped');
+            
+            // Random direction
+            const directions = ['es-zh', 'zh-es', 'es-en', 'en-es', 'zh-en', 'en-zh'];
+            practiceDirection = directions[Math.floor(Math.random() * directions.length)];
+            
+            setTimeout(() => {
+                const [src, tgt] = practiceDirection.split('-');
+                const srcLang = src === 'es' ? 'Spanish' : src === 'zh' ? 'Chinese' : 'English';
+                const tgtLang = tgt === 'es' ? 'Spanish' : tgt === 'zh' ? 'Chinese' : 'English';
+                
+                document.getElementById('frontLang').textContent = srcLang;
+                document.getElementById('backLang').textContent = tgtLang;
+                
+                document.getElementById('frontWord').textContent = src === 'es' ? currentWord.spanish : src === 'zh' ? currentWord.chinese : currentWord.english;
+                document.getElementById('frontPinyin').textContent = src === 'zh' ? currentWord.pinyin : '';
+                
+                document.getElementById('backWord').textContent = tgt === 'es' ? currentWord.spanish : tgt === 'zh' ? currentWord.chinese : currentWord.english;
+                document.getElementById('backPinyin').textContent = tgt === 'zh' ? currentWord.pinyin : '';
+            }, 200);
+        }
+        
+        async function markWrong() {
+            if (!currentWord) return;
+            await fetch(`/api/words/${currentWord.id}/practice?correct=false`, { method: 'POST' });
+            nextCard();
+        }
+        
+        async function markRight() {
+            if (!currentWord) return;
+            await fetch(`/api/words/${currentWord.id}/practice?correct=true`, { method: 'POST' });
+            nextCard();
+        }
+        
+        // Add word
+        async function addWord() {
+            const spanish = document.getElementById('newSpanish').value.trim();
+            const chinese = document.getElementById('newChinese').value.trim();
+            const pinyin = document.getElementById('newPinyin').value.trim();
+            const english = document.getElementById('newEnglish').value.trim();
+            
+            if (!spanish || !chinese || !english) {
+                alert('Please fill in Spanish, Chinese, and English');
+                return;
+            }
+            
+            await fetch('/api/words', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ spanish, chinese, pinyin, english })
+            });
+            
+            // Clear form
+            document.getElementById('newSpanish').value = '';
+            document.getElementById('newChinese').value = '';
+            document.getElementById('newPinyin').value = '';
+            document.getElementById('newEnglish').value = '';
+            
+            await loadWords();
+            alert('Word added!');
+        }
+        
+        // Import words
+        async function importWords() {
+            const data = document.getElementById('importData').value.trim();
+            if (!data) return;
+            
+            const lines = data.split('\n');
+            const wordsToImport = [];
+            
+            for (const line of lines) {
+                const parts = line.split(/[,\t]+/).map(p => p.trim());
+                if (parts.length >= 3) {
+                    wordsToImport.push({
+                        spanish: parts[0] || '',
+                        chinese: parts[1] || '',
+                        pinyin: parts[2] || '',
+                        english: parts[3] || ''
+                    });
+                }
+            }
+            
+            if (wordsToImport.length === 0) {
+                alert('No valid words found');
+                return;
+            }
+            
+            await fetch('/api/import', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(wordsToImport)
+            });
+            
+            document.getElementById('importData').value = '';
+            await loadWords();
+            alert(`Imported ${wordsToImport.length} words!`);
+        }
+        
+        // Render word list
+        function renderWordList() {
+            const list = document.getElementById('wordList');
+            if (words.length === 0) {
+                list.innerHTML = '<div class="empty-state">No words yet</div>';
+                return;
+            }
+            
+            list.innerHTML = words.map(w => `
+                <div class="word-item">
+                    <div class="word-info">
+                        <div class="word-pair">
+                            <span class="es">${w.spanish}</span>
+                        </div>
+                        <div class="word-pair">
+                            <span class="zh">${w.chinese} (${w.pinyin})</span>
+                        </div>
+                        <div class="word-pair">
+                            <span class="zh">${w.english}</span>
+                        </div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteWord(${w.id})">✗</button>
+                </div>
+            `).join('');
+        }
+        
+        async function deleteWord(id) {
+            if (!confirm('Delete this word?')) return;
+            await fetch(`/api/words/${id}`, { method: 'DELETE' });
+            await loadWords();
+        }
+        
+        // Init
+        loadWords();
+    </script>
+</body>
+</html>
