@@ -309,16 +309,6 @@
         // Direction button handlers
         document.querySelectorAll('.direction-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                // Don't allow German directions if current word has no German
-                const dir = btn.dataset.dir;
-                if (words.length > 0) {
-                    const hasGerman = words.some(w => w.german);
-                    if ((dir === 'es-de' || dir === 'en-de' || dir === 'zh-de' || dir === 'de-es') && !hasGerman) {
-                        alert('No German words yet! Add some words with German first.');
-                        return;
-                    }
-                }
-                
                 document.querySelectorAll('.direction-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 selectedDirection = btn.dataset.dir;
@@ -432,23 +422,8 @@
                 updateSequentialCard();
                 return; // Skip the normal setTimeout below
             } else {
-                // Fixed direction (e.g., 'es-en')
-                const [src, tgt] = selectedDirection.split('-');
-                
-                // Check if this direction is valid (both languages exist)
-                const hasEnglish = currentWord.english;
-                const hasGerman = currentWord.german;
-                
-                const srcValid = (src === 'es') || (src === 'zh') || (src === 'en' && hasEnglish) || (src === 'de' && hasGerman);
-                const tgtValid = (tgt === 'es') || (tgt === 'zh') || (tgt === 'en' && hasEnglish) || (tgt === 'de' && hasGerman);
-                
-                if (srcValid && tgtValid) {
-                    practiceDirection = selectedDirection;
-                } else {
-                    // Fallback to a valid direction
-                    directions = ['es-zh', 'es-en'];
-                    practiceDirection = directions[Math.floor(Math.random() * directions.length)];
-                }
+                // Fixed direction - always use selected direction, show "-" for missing languages
+                practiceDirection = selectedDirection;
             }
             
             setTimeout(() => {
