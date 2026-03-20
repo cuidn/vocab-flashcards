@@ -304,6 +304,7 @@
         // Load words on start
         let selectedDirection = 'random';
         let sequentialIndex = 0;
+        let flipCount = 0; // Track flips within same word for sequential mode
         
         // Direction button handlers
         document.querySelectorAll('.direction-btn').forEach(btn => {
@@ -312,6 +313,7 @@
                 btn.classList.add('active');
                 selectedDirection = btn.dataset.dir;
                 sequentialIndex = 0;
+                flipCount = 0;
                 if (words.length > 0) nextCard();
             });
         });
@@ -337,7 +339,55 @@
         
         // Flashcard logic
         function flipCard() {
-            document.getElementById('flashcard').classList.toggle('flipped');
+            if (selectedDirection === 'sequential') {
+                // Sequential mode: cycle through languages on same word
+                flipCount++;
+                updateSequentialCard();
+            } else {
+                // Normal flip mode
+                document.getElementById('flashcard').classList.toggle('flipped');
+            }
+        }
+        
+        function updateSequentialCard() {
+            if (!currentWord) return;
+            
+            // Available languages for this word
+            const langs = ['es', 'zh', 'en', 'de'];
+            const hasGerman = currentWord.german;
+            
+            // Filter to only valid languages for this word
+            const validLangs = langs.filter(l => {
+                if (l === 'es') return true; // Always have Spanish
+                if (l === 'zh') return true; // Always have Chinese
+                if (l === 'en') return currentWord.english;
+                if (l === 'de') return currentWord.german;
+                return false;
+            });
+            
+            if (validLangs.length < 2) return; // Need at least 2 languages
+            
+            const currentLang = validLangs[flipCount % validLangs.length];
+            const nextLang = validLangs[(flipCount + 1) % validLangs.length];
+            
+            const langMap = { 'es': 'Spanish', 'zh': 'Chinese', 'en': 'English', 'de': 'German' };
+            const wordMap = {
+                'es': currentWord.spanish,
+                'zh': currentWord.chinese,
+                'en': currentWord.english,
+                'de': currentWord.german
+            };
+            
+            // Show front as current language, back as next language
+            document.getElementById('frontLang').textContent = langMap[currentLang];
+            document.getElementById('backLang').textContent = langMap[nextLang];
+            document.getElementById('frontWord').textContent = wordMap[currentLang];
+            document.getElementById('backWord').textContent = wordMap[nextLang];
+            document.getElementById('frontPinyin').textContent = currentLang === 'zh' ? currentWord.pinyin : '';
+            document.getElementById('backPinyin').textContent = nextLang === 'zh' ? currentWord.pinyin : '';
+            
+            // Reset flip state to show front
+            document.getElementById('flashcard').classList.remove('flipped');
         }
         
         function nextCard() {
@@ -354,6 +404,7 @@
             
             currentWord = words[Math.floor(Math.random() * words.length)];
             document.getElementById('flashcard').classList.remove('flipped');
+            flipCount = 0;
             
             // Determine direction based on selected mode
             let directions = [];
@@ -366,12 +417,10 @@
                 }
                 practiceDirection = directions[Math.floor(Math.random() * directions.length)];
             } else if (selectedDirection === 'sequential') {
-                // Sequential: ES -> ZH -> EN -> DE -> ES...
-                const seqDirs = hasGerman 
-                    ? ['es-zh', 'zh-en', 'en-de', 'de-es']
-                    : ['es-zh', 'zh-en', 'en-es'];
-                practiceDirection = seqDirs[sequentialIndex % seqDirs.length];
-                sequentialIndex++;
+                // Sequential: show all languages for same word
+                // Initialize with first language pair
+                updateSequentialCard();
+                return; // Skip the normal setTimeout below
             } else {
                 // Fixed direction (e.g., 'es-en')
                 const [src, tgt] = selectedDirection.split('-');
@@ -416,12 +465,14 @@
         async function markWrong() {
             if (!currentWord) return;
             await fetch(`/api/words/${currentWord.id}/practice?correct=false`, { method: 'POST' });
+            flipCount = 0;
             nextCard();
         }
         
         async function markRight() {
             if (!currentWord) return;
             await fetch(`/api/words/${currentWord.id}/practice?correct=true`, { method: 'POST' });
+            flipCount = 0;
             nextCard();
         }
         
