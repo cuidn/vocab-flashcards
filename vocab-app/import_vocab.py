@@ -59,22 +59,40 @@ def import_csv(filename, auto_split=True):
     with open(filename, "r", encoding="utf-8") as f:
         reader = csv.reader(f, delimiter=delimiter)
         for row in reader:
-            if len(row) >= 3:
-                chinese_raw = row[1].strip()
+            if len(row) >= 2:
+                spanish = row[0].strip() if row[0] else ""
+                col_b = row[1].strip() if len(row) > 1 and row[1] else ""
+                col_c = row[2].strip() if len(row) > 2 and row[2] else ""
+                col_d = row[3].strip() if len(row) > 3 and row[3] else ""
+                col_e = row[4].strip() if len(row) > 4 and row[4] else ""
                 
-                # Auto-split Chinese + Pinyin if needed
-                if auto_split and len(row) >= 3 and row[2].strip() == "":
-                    chinese, pinyin = split_chinese_pinyin(chinese_raw)
+                # Auto-detect: does column B have both Chinese + Pinyin?
+                if auto_split and col_b:
+                    has_chinese = any('\u4e00' <= c <= '\u9fff' for c in col_b)
+                    col_c_is_english = col_c and not any('\u4e00' <= c <= '\u9fff' for c in col_c)
+                    
+                    if has_chinese and col_c_is_english:
+                        # Column B has Chinese+Pinyin, column C is English
+                        chinese, pinyin = split_chinese_pinyin(col_b)
+                        english = col_c
+                        german = col_d
+                    else:
+                        chinese = col_b
+                        pinyin = col_c
+                        english = col_d
+                        german = col_e
                 else:
-                    chinese = chinese_raw
-                    pinyin = row[2].strip() if len(row) > 2 else ""
+                    chinese = col_b
+                    pinyin = col_c
+                    english = col_d
+                    german = col_e
                 
                 words.append({
-                    "spanish": row[0].strip(),
+                    "spanish": spanish,
                     "chinese": chinese,
                     "pinyin": pinyin,
-                    "english": row[3].strip() if len(row) > 3 else "",
-                    "german": row[4].strip() if len(row) > 4 else ""
+                    "english": english,
+                    "german": german
                 })
     return words
 
@@ -90,27 +108,42 @@ def import_excel(filename, auto_split=True):
     words = []
     for row in ws.iter_rows(min_row=2, values_only=True):  # Skip header
         if row[0]:
-            chinese_raw = str(row[1]).strip() if row[1] else ""
+            # Read each column explicitly (Excel cells, no delimiter)
+            spanish = str(row[0]).strip() if row[0] else ""
+            col_b = str(row[1]).strip() if row[1] else ""
+            col_c = str(row[2]).strip() if row[2] else ""
+            col_d = str(row[3]).strip() if row[3] else ""
+            col_e = str(row[4]).strip() if len(row) > 4 and row[4] else ""
             
-            # Auto-split Chinese + Pinyin if needed (column B has both)
-            if auto_split and len(row) >= 3:
-                # If column C (pinyin) is empty, try to split column B
-                pinyin_col = str(row[2]).strip() if row[2] else ""
-                if not pinyin_col:
-                    chinese, pinyin = split_chinese_pinyin(chinese_raw)
+            # Auto-detect: does column B have both Chinese + Pinyin?
+            # Check if column B has Chinese chars AND column C looks like English (not pinyin)
+            if auto_split and col_b:
+                has_chinese = any('\u4e00' <= c <= '\u9fff' for c in col_b)
+                col_c_is_english = col_c and not any('\u4e00' <= c <= '\u9fff' for c in col_c)
+                
+                if has_chinese and col_c_is_english:
+                    # Column B has Chinese+Pinyin, column C is English
+                    chinese, pinyin = split_chinese_pinyin(col_b)
+                    english = col_c
+                    german = col_d
                 else:
-                    chinese = chinese_raw
-                    pinyin = pinyin_col
+                    # Normal case: column B=Chinese, C=Pinyin, D=English, E=German
+                    chinese = col_b
+                    pinyin = col_c
+                    english = col_d
+                    german = col_e
             else:
-                chinese = chinese_raw
-                pinyin = str(row[2]).strip() if row[2] else ""
+                chinese = col_b
+                pinyin = col_c
+                english = col_d
+                german = col_e
             
             words.append({
-                "spanish": str(row[0]).strip(),
+                "spanish": spanish,
                 "chinese": chinese,
                 "pinyin": pinyin,
-                "english": str(row[3]).strip() if row[3] else "",
-                "german": str(row[4]).strip() if len(row) > 4 and row[4] else ""
+                "english": english,
+                "german": german
             })
     return words
 
