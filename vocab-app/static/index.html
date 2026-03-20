@@ -238,19 +238,7 @@
             <button class="tab" data-tab="list">Word List</button>
             <button class="tab" data-tab="add">Add Words</button>
             <button class="tab" data-tab="import">Import</button>
-        </div>
-        
-        <!-- Intro -->
-        <div class="intro">
-            <h2>📚 How to Use</h2>
-            <ul>
-                <li><strong>Practice:</strong> Click a direction button above, then click the card to flip</li>
-                <li><strong>Sequential:</strong> Cycles through all languages: ES → ZH → EN → DE → ES...</li>
-                <li><strong>Right/Wrong:</strong> Track your progress - words you get wrong appear more often</li>
-                <li><strong>Add Words:</strong> Enter new vocabulary manually</li>
-                <li><strong>Import:</strong> Paste CSV/TSV or import from Excel (.xlsx)</li>
-                <li><strong>Sync:</strong> Push/pull <code>vocab-app/data/vocab.json</code> with colleagues via Git</li>
-            </ul>
+            <button class="tab" data-tab="help">Help</button>
         </div>
         
         <!-- Practice Tab -->
@@ -328,6 +316,68 @@
                 <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Format: spanish, chinese, pinyin, english, german</p>
                 <textarea id="importData" placeholder="Mantenimiento, 维护, Wéi hù, maintenance, Wartung&#10;Hola, 你好, nǐ hǎo, hello, Hallo"></textarea>
                 <button class="btn" style="background: #4f46e5; width: 100%;" onclick="importWords()">Import</button>
+            </div>
+        </div>
+        
+        <!-- Help Tab -->
+        <div id="help" class="tab-content hidden">
+            <div class="intro">
+                <h2>🎴 Vocab Flashcards - Help</h2>
+                
+                <h3>Practice Mode</h3>
+                <ul>
+                    <li>Click a direction button to choose how you want to practice:</li>
+                    <ul>
+                        <li><strong>Random:</strong> Random language pair each card</li>
+                        <li><strong>ES ↔ ZH:</strong> Spanish ↔ Chinese</li>
+                        <li><strong>ES ↔ EN:</strong> Spanish ↔ English</li>
+                        <li><strong>ES ↔ DE:</strong> Spanish ↔ German</li>
+                        <li><strong>ZH ↔ EN:</strong> Chinese ↔ English</li>
+                        <li><strong>ZH ↔ DE:</strong> Chinese ↔ German</li>
+                        <li><strong>EN ↔ DE:</strong> English ↔ German</li>
+                        <li><strong>Sequential:</strong> Click to flip cycles through all languages for the same word</li>
+                    </ul>
+                    <li>Click the flashcard to flip and reveal the answer</li>
+                    <li>Click ✓ Right if you knew it, ✗ Wrong if you didn't</li>
+                </ul>
+                
+                <h3>Adding Words</h3>
+                <ul>
+                    <li>Go to "Add Words" tab</li>
+                    <li>Fill in Spanish, Chinese, Pinyin, English (German is optional)</li>
+                    <li>Click "Add Word"</li>
+                </ul>
+                
+                <h3>Importing</h3>
+                <ul>
+                    <li>Go to "Import" tab</li>
+                    <li>Paste CSV/TSV data directly, OR</li>
+                    <li>Use command line: <code>python import_vocab.py yourfile.xlsx</code></li>
+                    <li>Supported formats: CSV (comma or semicolon), Excel (.xlsx)</li>
+                </ul>
+                
+                <h3>Syncing with Colleagues</h3>
+                <ul>
+                    <li>The vocabulary is stored in <code>vocab-app/data/vocab.json</code></li>
+                    <li>To share with colleagues:</li>
+                    <ul>
+                        <li><code>git add vocab-app/data/vocab.json</code></li>
+                        <li><code>git commit -m "Add new words"</code></li>
+                        <li><code>git push</code></li>
+                    </ul>
+                    <li>To get updates:</li>
+                    <ul>
+                        <li><code>git pull</code></li>
+                    </ul>
+                </ul>
+                
+                <h3>Progress Tracking</h3>
+                <ul>
+                    <li>Each word has a proficiency level (0-5)</li>
+                    <li>Clicking ✓ Right increases proficiency</li>
+                    <li>Clicking ✗ Wrong decreases proficiency</li>
+                    <li>Words with lower proficiency appear more often in random mode</li>
+                </ul>
             </div>
         </div>
     </div>
