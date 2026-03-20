@@ -6,6 +6,17 @@
       "chinese": "维护",
       "pinyin": "Wéi hù",
       "english": "maintenance",
+      "german": "Wartung",
+      "created_at": "2026-03-20",
+      "proficiency": 0
+    },
+    {
+      "id": 2,
+      "spanish": "Hola",
+      "chinese": "你好",
+      "pinyin": "Nǐ hǎo",
+      "english": "hello",
+      "german": "Hallo",
       "created_at": "2026-03-20",
       "proficiency": 0
     }

@@ -40,7 +40,8 @@ def import_csv(filename):
                     "spanish": row[0].strip(),
                     "chinese": row[1].strip(),
                     "pinyin": row[2].strip() if len(row) > 2 else "",
-                    "english": row[3].strip() if len(row) > 3 else ""
+                    "english": row[3].strip() if len(row) > 3 else "",
+                    "german": row[4].strip() if len(row) > 4 else ""
                 })
     return words
 
@@ -60,7 +61,8 @@ def import_excel(filename):
                 "spanish": str(row[0]).strip(),
                 "chinese": str(row[1]).strip() if row[1] else "",
                 "pinyin": str(row[2]).strip() if row[2] else "",
-                "english": str(row[3]).strip() if row[3] else ""
+                "english": str(row[3]).strip() if row[3] else "",
+                "german": str(row[4]).strip() if len(row) > 4 and row[4] else ""
             })
     return words
 

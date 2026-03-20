@@ -29,6 +29,7 @@ class Word(BaseModel):
     chinese: str
     pinyin: str
     english: str
+    german: str = ""
     created_at: str
     proficiency: int = 0
 
@@ -38,6 +39,7 @@ class WordCreate(BaseModel):
     chinese: str
     pinyin: str
     english: str
+    german: str = ""
 
 
 class VocabStore(BaseModel):
@@ -85,6 +87,7 @@ async def add_word(word: WordCreate):
         chinese=word.chinese,
         pinyin=word.pinyin,
         english=word.english,
+        german=word.german,
         created_at=datetime.utcnow().strftime("%Y-%m-%d"),
         proficiency=0
     )
@@ -127,6 +130,7 @@ async def import_words(words: List[WordCreate]):
             chinese=word.chinese,
             pinyin=word.pinyin,
             english=word.english,
+            german=word.german,
             created_at=datetime.utcnow().strftime("%Y-%m-%d"),
             proficiency=0
         ))
