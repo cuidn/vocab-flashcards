@@ -50,8 +50,14 @@ def save_vocab(data):
 
 def import_csv(filename, auto_split=True):
     words = []
+    
+    # Auto-detect delimiter (comma or semicolon)
     with open(filename, "r", encoding="utf-8") as f:
-        reader = csv.reader(f)
+        first_line = f.readline()
+        delimiter = ';' if first_line.count(';') > first_line.count(',') else ','
+    
+    with open(filename, "r", encoding="utf-8") as f:
+        reader = csv.reader(f, delimiter=delimiter)
         for row in reader:
             if len(row) >= 3:
                 chinese_raw = row[1].strip()
