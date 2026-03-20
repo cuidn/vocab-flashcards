@@ -164,6 +164,43 @@
             padding: 60px 20px;
             color: #888;
         }
+        
+        /* Direction Selector */
+        .direction-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .direction-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: #aaa;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+        }
+        .direction-btn:hover {
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        .direction-btn.active {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff;
+        }
+        .direction-btn.sequential {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+        .direction-btn.sequential.active {
+            background: #22c55e;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -182,6 +219,17 @@
         
         <!-- Practice Tab -->
         <div id="practice" class="tab-content">
+            <!-- Direction Selector -->
+            <div class="direction-selector">
+                <button class="direction-btn active" data-dir="random">🎲 Random</button>
+                <button class="direction-btn" data-dir="es-zh">ES ↔ ZH</button>
+                <button class="direction-btn" data-dir="es-en">ES ↔ EN</button>
+                <button class="direction-btn" data-dir="es-de">ES ↔ DE</button>
+                <button class="direction-btn" data-dir="zh-en">ZH ↔ EN</button>
+                <button class="direction-btn" data-dir="zh-de">ZH ↔ DE</button>
+                <button class="direction-btn" data-dir="en-de">EN ↔ DE</button>
+                <button class="direction-btn sequential" data-dir="sequential">🔄 Sequential</button>
+            </div>
             <div class="card-container" id="cardContainer">
                 <div class="empty-state" id="emptyState">
                     <p>No words yet!</p>
@@ -254,6 +302,20 @@
         let practiceDirection = 'es-en'; // es-en, en-es, zh-en, en-zh
         
         // Load words on start
+        let selectedDirection = 'random';
+        let sequentialIndex = 0;
+        
+        // Direction button handlers
+        document.querySelectorAll('.direction-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.direction-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedDirection = btn.dataset.dir;
+                sequentialIndex = 0;
+                if (words.length > 0) nextCard();
+            });
+        });
+        
         async function loadWords() {
             const res = await fetch('/api/words');
             const data = await res.json();
@@ -293,12 +355,39 @@
             currentWord = words[Math.floor(Math.random() * words.length)];
             document.getElementById('flashcard').classList.remove('flipped');
             
-            // Random direction (includes German if available)
-            let directions = ['es-zh', 'zh-es', 'es-en', 'en-es', 'zh-en', 'en-zh'];
-            if (currentWord.german) {
-                directions = directions.concat(['es-de', 'de-es', 'en-de', 'de-en', 'zh-de', 'de-zh']);
+            // Determine direction based on selected mode
+            let directions = [];
+            const hasGerman = currentWord.german;
+            
+            if (selectedDirection === 'random') {
+                directions = ['es-zh', 'zh-es', 'es-en', 'en-es', 'zh-en', 'en-zh'];
+                if (hasGerman) {
+                    directions = directions.concat(['es-de', 'de-es', 'en-de', 'de-en', 'zh-de', 'de-zh']);
+                }
+                practiceDirection = directions[Math.floor(Math.random() * directions.length)];
+            } else if (selectedDirection === 'sequential') {
+                // Sequential: ES -> ZH -> EN -> DE -> ES...
+                const seqDirs = hasGerman 
+                    ? ['es-zh', 'zh-en', 'en-de', 'de-es']
+                    : ['es-zh', 'zh-en', 'en-es'];
+                practiceDirection = seqDirs[sequentialIndex % seqDirs.length];
+                sequentialIndex++;
+            } else {
+                // Fixed direction (e.g., 'es-en')
+                const [src, tgt] = selectedDirection.split('-');
+                // Check if this direction is valid (both languages exist)
+                const srcValid = src === 'es' || (src === 'zh') || (src === 'en' && currentWord.english) || (src === 'de' && currentWord.german);
+                const tgtValid = tgt === 'es' || (tgt === 'zh') || (tgt === 'en' && currentWord.english) || (tgt === 'de' && currentWord.german);
+                
+                if (srcValid && tgtValid) {
+                    practiceDirection = selectedDirection;
+                } else {
+                    // Fallback to random if selected combo not valid
+                    directions = ['es-zh', 'es-en'];
+                    if (hasGerman) directions.push('es-de');
+                    practiceDirection = directions[Math.floor(Math.random() * directions.length)];
+                }
             }
-            practiceDirection = directions[Math.floor(Math.random() * directions.length)];
             
             setTimeout(() => {
                 const [src, tgt] = practiceDirection.split('-');
