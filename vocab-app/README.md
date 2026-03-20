@@ -24,8 +24,17 @@ Then open http://localhost:8000 in your browser.
 
 ## Import from Excel/CSV
 
-1. Export your Excel sheet as CSV
-2. Run: `python import_vocab.py yourfile.csv`
+**Option 1: Import Excel directly (recommended)**
+```bash
+python import_vocab.py yourfile.xlsx
+```
+Make sure your Excel has headers in row 1: Spanish, Chinese, Pinyin, English, German
+
+**Option 2: Import CSV**
+Export from Excel as "CSV UTF-8" (not regular CSV), then:
+```bash
+python import_vocab.py yourfile.csv
+```
 
 Format: `spanish, chinese, pinyin, english, german` (no header)
 
