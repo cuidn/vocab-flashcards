@@ -5,12 +5,14 @@ import json
 import os
 from pathlib import Path
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import random
+import re
+import io
 
 # Config
 DATA_FILE = Path(__file__).parent / "data" / "vocab.json"
@@ -136,6 +138,74 @@ async def import_words(words: List[WordCreate]):
         ))
     save_vocab(store)
     return {"status": "imported", "count": len(words)}
+
+
+@app.post("/api/import/xlsx")
+async def import_xlsx(file: UploadFile = File(...)):
+    """Import vocabulary from an xlsx file.
+
+    Expected columns: Spanish, Chinese, English, German
+    The Chinese column contains Chinese characters + Pinyin combined.
+    """
+    import openpyxl
+
+    if not file.filename.endswith((".xlsx", ".xls")):
+        raise HTTPException(status_code=400, detail="Only .xlsx and .xls files are supported")
+
+    try:
+        contents = await file.read()
+        wb = openpyxl.load_workbook(io.BytesIO(contents))
+        ws = wb.active
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read Excel file: {e}")
+
+    store = load_vocab()
+    new_id = max([w.id for w in store.words], default=0)
+    rows_added = 0
+
+    # Pattern: Chinese characters (one or more) followed by space and Pinyin
+    # e.g. "提前完成工作 Tí qián wán chéng gōng zuò"
+    chinese_pinyin_pattern = re.compile(
+        r'^([\u4e00-\u9fff]+)\s+([a-zA-Z\u00c0-\u024f\u0100\u0128]+.*)$',
+        re.UNICODE
+    )
+
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        if not row[0]:
+            continue
+
+        spanish = str(row[0]).strip() if row[0] else ""
+        col_b = str(row[1]).strip() if row[1] else ""
+        english = str(row[2]).strip() if row[2] else ""
+        german = str(row[3]).strip() if row[3] else "" if len(row) > 3 else ""
+
+        if not spanish or not col_b:
+            continue
+
+        # Split Chinese + Pinyin from column B
+        match = chinese_pinyin_pattern.match(col_b)
+        if match:
+            chinese = match.group(1)
+            pinyin = match.group(2)
+        else:
+            chinese = col_b
+            pinyin = ""
+
+        new_id += 1
+        store.words.append(Word(
+            id=new_id,
+            spanish=spanish,
+            chinese=chinese,
+            pinyin=pinyin,
+            english=english,
+            german=german,
+            created_at=datetime.utcnow().strftime("%Y-%m-%d"),
+            proficiency=0
+        ))
+        rows_added += 1
+
+    save_vocab(store)
+    return {"status": "imported", "count": rows_added}
 
 
 @app.get("/api/practice/random")

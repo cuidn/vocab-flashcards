@@ -315,7 +315,13 @@
                 <p style="margin-bottom: 10px; color: #aaa;">Paste CSV/TSV data (no header):</p>
                 <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Format: spanish, chinese, pinyin, english, german</p>
                 <textarea id="importData" placeholder="Mantenimiento, 维护, Wéi hù, maintenance, Wartung&#10;Hola, 你好, nǐ hǎo, hello, Hallo"></textarea>
-                <button class="btn" style="background: #4f46e5; width: 100%;" onclick="importWords()">Import</button>
+                <button class="btn" style="background: #4f46e5; width: 100%;" onclick="importWords()">Import Text</button>
+            </div>
+            <div class="import-section" style="margin-top: 15px;">
+                <p style="margin-bottom: 10px; color: #aaa;">Or upload an Excel file (.xlsx):</p>
+                <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Columns: Spanish, Chinese (Chinese + Pinyin), English, German</p>
+                <input type="file" id="importFile" accept=".xlsx,.xls" style="width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff;">
+                <button class="btn" style="background: #22c55e; width: 100%; margin-top: 10px;" onclick="importXlsx()">Import Excel File</button>
             </div>
         </div>
         
@@ -352,6 +358,7 @@
                 <ul>
                     <li>Go to "Import" tab</li>
                     <li>Paste CSV/TSV data directly, OR</li>
+                    <li>Upload an Excel (.xlsx) file directly from the Import tab</li>
                     <li>Use command line: <code>python import_vocab.py yourfile.xlsx</code></li>
                     <li>Supported formats: CSV (comma or semicolon), Excel (.xlsx)</li>
                 </ul>
@@ -615,6 +622,36 @@
             document.getElementById('importData').value = '';
             await loadWords();
             alert(`Imported ${wordsToImport.length} words!`);
+        }
+
+        // Import xlsx file
+        async function importXlsx() {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select an Excel file first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('/api/import/xlsx', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+                if (!res.ok) {
+                    alert('Import failed: ' + (result.detail || 'Unknown error'));
+                    return;
+                }
+                fileInput.value = '';
+                await loadWords();
+                alert(`Imported ${result.count} words!`);
+            } catch (e) {
+                alert('Import failed: ' + e.message);
+            }
         }
         
         // Render word list
